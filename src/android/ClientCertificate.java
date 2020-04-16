@@ -59,6 +59,9 @@ public class ClientCertificate extends CordovaPlugin {
             Enumeration e = keystore.aliases();
             if (e.hasMoreElements()) {
                 String ealias = (String) e.nextElement();
+                if (e.hasMoreElements()) { // if our key has a friendly name, check for the next element
+                    ealias = (String) e.nextElement();
+                }
                 PrivateKey key = (PrivateKey) keystore.getKey(ealias, p12password.toCharArray());
                 java.security.cert.Certificate[]  chain = keystore.getCertificateChain(ealias);
                 X509Certificate[] certs = Arrays.copyOf(chain, chain.length, X509Certificate[].class);
