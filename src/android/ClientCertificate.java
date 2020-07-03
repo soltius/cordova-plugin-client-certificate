@@ -52,23 +52,33 @@ public class ClientCertificate extends CordovaPlugin {
     public boolean onReceivedClientCertRequest(CordovaWebView view, ICordovaClientCertRequest request) {
         try {
             KeyStore keystore = KeyStore.getInstance("PKCS12");
-
             InputStream astream = cordova.getActivity().getApplicationContext().getAssets().open(p12path);
+
             keystore.load(astream, p12password.toCharArray());
             astream.close();
             Enumeration e = keystore.aliases();
+
             if (e.hasMoreElements()) {
                 String ealias = (String) e.nextElement();
-                if (e.hasMoreElements()) { // if our key has a friendly name, check for the next element
-                    ealias = (String) e.nextElement();
-                }
                 PrivateKey key = (PrivateKey) keystore.getKey(ealias, p12password.toCharArray());
-                java.security.cert.Certificate[]  chain = keystore.getCertificateChain(ealias);
-                X509Certificate[] certs = Arrays.copyOf(chain, chain.length, X509Certificate[].class);
-                request.proceed(key,certs);
+
+                while (key == null && e.hasMoreElements()) {
+                    ealias = (String) e.nextElement();
+                    key = (PrivateKey) keystore.getKey(ealias, p12password.toCharArray());
+                }
+
+                if (key == null) {
+                    request.ignore();
+                } else {
+                    java.security.cert.Certificate[]  chain = keystore.getCertificateChain(ealias);
+                    X509Certificate[] certs = Arrays.copyOf(chain, chain.length, X509Certificate[].class);
+                    request.proceed(key,certs);
+                }
+
             } else {
                 request.ignore();
             }
+
         } catch (Exception ex) {
             ex.printStackTrace();
             request.ignore();
